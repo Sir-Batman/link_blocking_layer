@@ -88,8 +88,8 @@ namespace link_blocking_namespace
 		// Convert points 0 and 1 stored in wall w from world coordinates to map coordinates
 		unsigned int mx = 0;
 		unsigned int my = 0;
-		std::pair<unsigned int, unsigned int> p_1;
-		std::pair<unsigned int, unsigned int> p_2;
+		std::pair<int, int> p_1;
+		std::pair<int, int> p_2;
 
 		if(worldToMap(w.first.first, w.first.second, mx, my))
 		{
@@ -113,10 +113,10 @@ namespace link_blocking_namespace
 		}
 
 		// Mark the rasterized line between the points i and i+1 as deadly
-		unsigned int dx = p_2.first - p_1.first;
-		unsigned int dy = p_2.second - p_1.second;
-		unsigned int y = 0;
-		unsigned int x = 0;
+		int dx = p_2.first - p_1.first;
+		int dy = p_2.second - p_1.second;
+		int y = 0;
+		int x = 0;
 		// Special case for 'vertical' lines
 		if (dx == 0)
 		{
@@ -130,7 +130,7 @@ namespace link_blocking_namespace
 		{
 			for (x= p_1.first; x != p_2.first; (p_1.first < p_2.first ? ++x : --x))
 			{
-				y = p_1.second + dy*(x + p_1.first)/dx;
+				y = p_1.second + dy*(x - p_1.first)/dx;
 				setCost(x, y, FREE_SPACE);
 			}
 		}
@@ -156,8 +156,8 @@ namespace link_blocking_namespace
 		// Convert points 0 and 1 stored in wall w from world coordinates to map coordinates
 		unsigned int mx = 0;
 		unsigned int my = 0;
-		std::pair<unsigned int, unsigned int> p_1;
-		std::pair<unsigned int, unsigned int> p_2;
+		std::pair<int, int> p_1;
+		std::pair<int, int> p_2;
 
 		if(worldToMap(w.first.first, w.first.second, mx, my))
 		{
@@ -181,10 +181,10 @@ namespace link_blocking_namespace
 		}
 
 		// Mark the rasterized line between the points i and i+1 as deadly
-		unsigned int dx = p_2.first - p_1.first;
-		unsigned int dy = p_2.second - p_1.second;
-		unsigned int y = 0;
-		unsigned int x = 0;
+		int dx = p_2.first - p_1.first;
+		int dy = p_2.second - p_1.second;
+		int y = 0;
+		int x = 0;
 		// Special case for 'vertical' lines
 		if (dx == 0)
 		{
@@ -198,20 +198,20 @@ namespace link_blocking_namespace
 		{
 			for (x= p_1.first; x != p_2.first; (p_1.first < p_2.first ? ++x : --x))
 			{
-				y = p_1.second + dy*(x + p_1.first)/dx;
+				y = p_1.second + dy*(x - p_1.first)/dx;
 				setCost(x, y, LETHAL_OBSTACLE);
 			}
 		}
 		// Update the max and min boundaries, potentially from point i or i+1
-		*min_x = std::min(*min_x, w.first.first);
-		*min_y = std::min(*min_y, w.first.second);
-		*max_x = std::max(*max_x, w.first.first);
-		*max_y = std::max(*max_y, w.first.second);
+		*min_x = std::min(*min_x, w.first.first-1.5);
+		*min_y = std::min(*min_y, w.first.second-1.5);
+		*max_x = std::max(*max_x, w.first.first+1.5);
+		*max_y = std::max(*max_y, w.first.second+1.5);
 
-		*min_x = std::min(*min_x, w.second.first);
-		*min_y = std::min(*min_y, w.second.second);
-		*max_x = std::max(*max_x, w.second.first);
-		*max_y = std::max(*max_y, w.second.second);
+		*min_x = std::min(*min_x, w.second.first-1.5);
+		*min_y = std::min(*min_y, w.second.second-1.5);
+		*max_x = std::max(*max_x, w.second.first+1.5);
+		*max_y = std::max(*max_y, w.second.second+1.5);
 
 		return 0;
 	}// End addWall()
