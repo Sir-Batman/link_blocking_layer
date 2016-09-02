@@ -13,10 +13,11 @@ namespace link_blocking_namespace
 
 	void BlockingLayer::onInitialize()
 	{
-		points.push_back(std::pair<double, double>(-3,0));
-		points.push_back(std::pair<double, double>(-3,-1));
-		points.push_back(std::pair<double, double>(0,-1));
+		//points.push_back(std::pair<double, double>(-3,0));
+		points.push_back(std::pair<double, double>(3,-1));
+		points.push_back(std::pair<double, double>(6,-1));
 		//points.push_back(std::pair<double, double>(0,0));
+		counter_ = 0;
 
 		ros::NodeHandle nh("~/" + name_);
 		current_ = true;
@@ -49,33 +50,35 @@ namespace link_blocking_namespace
 		boost::recursive_mutex::scoped_lock lock(lock_);
 		if (!enabled_) { return; }
 
-		if (points.size() == 0) { return; }
-		wall w;
-		w.first = points[0];
-		w.second = points[1];
 		int r;
-		if (counter_ == 0)
+		while (to_add.size() > 0)
 		{
-			r = addWall(w, min_x, min_y, max_x, max_y);
+			r = addWall(to_add[0], min_x, min_y, max_x, max_y);
+			current_blocks.push_back(to_add[0]);
+			to_add.erase(to_add.begin());
 		}
-		ROS_INFO("removing wall in %d...", 60 - counter_);
-		++counter_;
-		if (counter_ == 60)
+		while (to_remove.size() > 0)
 		{
-			ROS_INFO("REMOVING WALL");
-			r = removeWall(w, min_x, min_y, max_x, max_y);
+			r = removeWall(to_remove[0], min_x, min_y, max_x, max_y);
+			// Find and remove from current_blocks
+			for (int i = 0; i < current_blocks.size(); ++i)
+			{
+				if (current_blocks[i].first.first == to_remove[0].first.first &&
+						current_blocks[i].first.second == to_remove[0].first.second &&
+						current_blocks[i].second.first == to_remove[0].second.first &&
+						current_blocks[i].second.second == to_remove[0].second.second)
+				{
+					current_blocks.erase(current_blocks.begin() + i);
+					break;
+				}
+			}
+			to_remove.erase(to_remove.begin());
 		}
 
-		// Remove the first two points now that they are marked
-		//points.erase(points.begin(),points.begin()+1);
 	}
 
 	int BlockingLayer::removeWall(wall &w,double* min_x, double* min_y, double* max_x, double* max_y) 
 	{
-		// Create 1 line at a time, instead of trying to poplate all available
-		// lines at once, so there's no major lag/bottleneck in waiting for all
-		// lines to be created at once before the first one is available to be
-		// rendered 
 		// Convert points 0 and 1 stored in wall w from world coordinates to map coordinates
 		unsigned int mx = 0;
 		unsigned int my = 0;
@@ -144,10 +147,6 @@ namespace link_blocking_namespace
 	 * class list of walls being kept track of. */
 	int BlockingLayer::addWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y)
 	{
-		// Create 1 line at a time, instead of trying to poplate all available
-		// lines at once, so there's no major lag/bottleneck in waiting for all
-		// lines to be created at once before the first one is available to be
-		// rendered 
 		// Convert points 0 and 1 stored in wall w from world coordinates to map coordinates
 		unsigned int mx = 0;
 		unsigned int my = 0;
@@ -229,6 +228,41 @@ namespace link_blocking_namespace
 				}
 				master_grid.setCost(i, j, costmap_[index]); 
 			}
+		}
+	}
+
+	/* Takes in 4 floating point numbers, [p1X, p1Y, p2X, p2Y]
+	 * and constructs a wall between the points by converting 
+	 * to the wall format and adding the wall to the to_add list */
+	void BlockingLayer::convertAndAdd(float points[])
+	{
+		wall w;
+		w.first.first   = points[0];
+		w.first.second  = points[1];
+		w.second.first  = points[2];
+		w.second.second = points[3];
+		to_add.push_back(w);
+	}
+
+	/* Takes in 4 floating point numbers, [p1X, p1Y, p2X, p2Y]
+	 * and constructs a wall between the points by converting 
+	 * to the wall format and adding the wall to the to_remove list */
+	void BlockingLayer::convertAndRemove(float points[])
+	{
+		wall w;
+		w.first.first   = points[0];
+		w.first.second  = points[1];
+		w.second.first  = points[2];
+		w.second.second = points[3];
+		to_remove.push_back(w);
+	}
+
+	/* Simple method to clean out all the walls currently being used */
+	void BlockingLayer::clearWalls()
+	{
+		for (int i = 0; i < current_blocks.size(); ++i)
+		{
+			to_remove.push_back(current_blocks[i]);
 		}
 	}
 

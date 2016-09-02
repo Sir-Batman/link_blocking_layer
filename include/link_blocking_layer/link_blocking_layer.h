@@ -28,13 +28,21 @@ namespace link_blocking_namespace
 			}
 
 			virtual void matchSize();
+			void convertAndAdd(float points[]);
+			void convertAndRemove(float points[]);
+			void clearWalls();
 
 		private:
+			// Members
+			std::vector<wall> current_blocks; // Keeps track of the currently implemented walls
+			std::vector<wall> to_add; // List of walls to add, queried by updateBounds()
+			std::vector<wall> to_remove; // List of walls to remvoe, queried by updateBounds();
+			boost::recursive_mutex lock_;
+			std::vector<point> points; // Deprecated
+			int counter_; // Deprecated, purely for testing purposes
+
 			void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 			dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
-			
-			boost::recursive_mutex lock_;
-			std::vector<point> points;
 			int addWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
 			int removeWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
 	};
