@@ -47,18 +47,19 @@ namespace link_blocking_namespace
 	 * the costmap. */
 	void BlockingLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
 	{
-		boost::recursive_mutex::scoped_lock lock(lock_);
 		if (!enabled_) { return; }
 
 		int r;
 		while (to_add.size() > 0)
 		{
+			boost::mutex::scoped_lock lock(lock_);
 			r = addWall(to_add[0], min_x, min_y, max_x, max_y);
 			current_blocks.push_back(to_add[0]);
 			to_add.erase(to_add.begin());
 		}
 		while (to_remove.size() > 0)
 		{
+			boost::mutex::scoped_lock lock(lock_);
 			r = removeWall(to_remove[0], min_x, min_y, max_x, max_y);
 			// Find and remove from current_blocks
 			for (int i = 0; i < current_blocks.size(); ++i)
@@ -236,6 +237,7 @@ namespace link_blocking_namespace
 	 * to the wall format and adding the wall to the to_add list */
 	void BlockingLayer::convertAndAdd(float points[])
 	{
+		boost::mutex::scoped_lock lock(lock_);
 		wall w;
 		w.first.first   = points[0];
 		w.first.second  = points[1];
@@ -249,6 +251,7 @@ namespace link_blocking_namespace
 	 * to the wall format and adding the wall to the to_remove list */
 	void BlockingLayer::convertAndRemove(float points[])
 	{
+		boost::mutex::scoped_lock lock(lock_);
 		wall w;
 		w.first.first   = points[0];
 		w.first.second  = points[1];
@@ -260,6 +263,7 @@ namespace link_blocking_namespace
 	/* Simple method to clean out all the walls currently being used */
 	void BlockingLayer::clearWalls()
 	{
+		boost::mutex::scoped_lock lock(lock_);
 		for (int i = 0; i < current_blocks.size(); ++i)
 		{
 			to_remove.push_back(current_blocks[i]);

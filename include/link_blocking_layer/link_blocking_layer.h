@@ -37,7 +37,7 @@ namespace link_blocking_namespace
 			std::vector<wall> current_blocks; // Keeps track of the currently implemented walls
 			std::vector<wall> to_add; // List of walls to add, queried by updateBounds()
 			std::vector<wall> to_remove; // List of walls to remvoe, queried by updateBounds();
-			boost::recursive_mutex lock_;
+			boost::mutex lock_;
 			std::vector<point> points; // Deprecated
 			int counter_; // Deprecated, purely for testing purposes
 
