@@ -5,6 +5,7 @@ PLUGINLIB_EXPORT_CLASS(link_blocking_namespace::BlockingLayer, costmap_2d::Layer
 
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::NO_INFORMATION;
+using costmap_2d::FREE_SPACE;
 
 namespace link_blocking_namespace
 {
@@ -52,13 +53,92 @@ namespace link_blocking_namespace
 		wall w;
 		w.first = points[0];
 		w.second = points[1];
-		int r = addWall(w, min_x, min_y, max_x, max_y);
+		int r;
+		if (counter_ == 0)
+		{
+			r = addWall(w, min_x, min_y, max_x, max_y);
+		}
+		ROS_INFO("removing wall in %d...", 60 - counter_);
+		++counter_;
+		if (counter_ == 60)
+		{
+			ROS_INFO("REMOVING WALL");
+			r = removeWall(w, min_x, min_y, max_x, max_y);
+		}
 
 		// Remove the first two points now that they are marked
-		points.erase(points.begin(),points.begin()+1);
+		//points.erase(points.begin(),points.begin()+1);
 	}
 
-	int BlockingLayer::removeWall(wall &w,double* min_x, double* min_y, double* max_x, double* max_y) {return 0;}
+	int BlockingLayer::removeWall(wall &w,double* min_x, double* min_y, double* max_x, double* max_y) 
+	{
+		// Create 1 line at a time, instead of trying to poplate all available
+		// lines at once, so there's no major lag/bottleneck in waiting for all
+		// lines to be created at once before the first one is available to be
+		// rendered 
+		// Convert points 0 and 1 stored in wall w from world coordinates to map coordinates
+		unsigned int mx = 0;
+		unsigned int my = 0;
+		std::pair<unsigned int, unsigned int> p_1;
+		std::pair<unsigned int, unsigned int> p_2;
+
+		if(worldToMap(w.first.first, w.first.second, mx, my))
+		{
+			p_1.first  = mx;
+			p_1.second = my;
+		}
+		else
+		{
+			//ROS_INFO("ERROR CONVERTING p1(%lf, %lf)",w.first.first, w.first.second);
+			return -1;
+		}
+		if(worldToMap(w.second.first, w.second.second, mx, my))
+		{
+			p_2.first  = mx;
+			p_2.second = my;
+		}
+		else
+		{
+			//ROS_INFO("ERROR CONVERTING p2(%lf, %lf)", w.second.first, w.second.second);
+			return -1;
+		}
+
+		// Mark the rasterized line between the points i and i+1 as deadly
+		unsigned int dx = p_2.first - p_1.first;
+		unsigned int dy = p_2.second - p_1.second;
+		unsigned int y = 0;
+		unsigned int x = 0;
+		// Special case for 'vertical' lines
+		if (dx == 0)
+		{
+			x = p_1.first;
+			for (y = p_1.second; y != p_2.second; (p_1.second < p_2.second ? ++y : --y))
+			{
+				setCost(x, y, FREE_SPACE);
+			}
+		}
+		else 
+		{
+			for (x= p_1.first; x != p_2.first; (p_1.first < p_2.first ? ++x : --x))
+			{
+				y = p_1.second + dy*(x + p_1.first)/dx;
+				setCost(x, y, FREE_SPACE);
+			}
+		}
+		// Update the max and min boundaries, potentially from point i or i+1
+		//ROS_INFO("radius: %lf", cell_inflation_radius_);
+		*min_x = std::min(*min_x, w.first.first-1.5);
+		*min_y = std::min(*min_y, w.first.second-1.5);
+		*max_x = std::max(*max_x, w.first.first+1.5);
+		*max_y = std::max(*max_y, w.first.second+1.5);
+
+		*min_x = std::min(*min_x, w.second.first-1.5);
+		*min_y = std::min(*min_y, w.second.second-1.5);
+		*max_x = std::max(*max_x, w.second.first+1.5);
+		*max_y = std::max(*max_y, w.second.second+1.5);
+
+		return 0;
+	}// End removeWall()
 
 	/* This adds the wall to the costmap. Assumes that the wall is already stored in 
 	 * class list of walls being kept track of. */
@@ -130,7 +210,6 @@ namespace link_blocking_namespace
 
 		return 0;
 	}// End addWall()
-
 
 	/* Writes any new cost updates to the global costmap */
 	void BlockingLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
