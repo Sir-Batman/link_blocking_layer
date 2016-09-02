@@ -8,6 +8,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
 #include <vector>
+#include <std_msgs/Float32MultiArray.h>
 
 namespace link_blocking_namespace
 {
@@ -32,7 +33,7 @@ namespace link_blocking_namespace
 			void convertAndRemove(float points[]);
 			void clearWalls();
 
-		private:
+		protected:
 			// Members
 			std::vector<wall> current_blocks; // Keeps track of the currently implemented walls
 			std::vector<wall> to_add; // List of walls to add, queried by updateBounds()
@@ -40,11 +41,14 @@ namespace link_blocking_namespace
 			boost::mutex lock_;
 			std::vector<point> points; // Deprecated
 			int counter_; // Deprecated, purely for testing purposes
+			ros::Subscriber wall_sub_;
 
+			// Methods
 			void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 			dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 			int addWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
 			int removeWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
+			void wallCallback(const std_msgs::Float32MultiArray &msg);
 	};
 }
 #endif

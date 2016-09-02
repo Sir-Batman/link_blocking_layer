@@ -27,6 +27,10 @@ namespace link_blocking_namespace
 		dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
 		dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind( &BlockingLayer::reconfigureCB, this, _1, _2);
 		dsrv_->setCallback(cb);
+
+		// Setup callback for recieving wall requests
+		wall_sub_= nh.subscribe("/addWall", 1000, &BlockingLayer::wallCallback, this);
+		ros::spin();
 	}
 
 	void BlockingLayer::matchSize()
@@ -269,5 +273,20 @@ namespace link_blocking_namespace
 			to_remove.push_back(current_blocks[i]);
 		}
 	}
+
+	void BlockingLayer::wallCallback(const std_msgs::Float32MultiArray& msg)
+	{
+		ROS_INFO("IN wallCallback");
+		float points[4];
+		std::cout << "msg size: " << msg.layout.dim[0].size << std::endl;
+		std::cout << "msg stride: " << msg.layout.dim[0].stride << std::endl;
+
+		for (int i = 0; i < 4; ++i)
+		{
+			points[i] = msg.data[i];
+			std::cout << "points[" << i << "]: " << points[i] << std::endl;
+		}
+	}
+		
 
 } // end namespace
