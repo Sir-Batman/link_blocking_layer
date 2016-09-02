@@ -29,8 +29,7 @@ namespace link_blocking_namespace
 		dsrv_->setCallback(cb);
 
 		// Setup callback for recieving wall requests
-		wall_sub_= nh.subscribe("/addWall", 1000, &BlockingLayer::wallCallback, this);
-		ros::spin();
+		wall_sub_= nh.subscribe("/editWalls", 1000, &BlockingLayer::wallCallback, this);
 	}
 
 	void BlockingLayer::matchSize()
@@ -52,6 +51,8 @@ namespace link_blocking_namespace
 	void BlockingLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
 	{
 		if (!enabled_) { return; }
+		// Check for new messages
+		ros::spinOnce();
 
 		int r;
 		while (to_add.size() > 0)
@@ -247,6 +248,18 @@ namespace link_blocking_namespace
 		w.first.second  = points[1];
 		w.second.first  = points[2];
 		w.second.second = points[3];
+		// Check to make sure the wall being added isn't already on the costmap
+		for (int i = 0; i < current_blocks.size(); ++i)
+		{
+			if (current_blocks[i].first.first == w.first.first &&
+					current_blocks[i].first.second == w.first.second &&
+					current_blocks[i].second.first == w.second.first &&
+					current_blocks[i].second.second == w.second.second)
+			{
+				ROS_INFO("Point already in list. Not adding");
+				return;
+			}
+		}
 		to_add.push_back(w);
 	}
 
@@ -261,7 +274,19 @@ namespace link_blocking_namespace
 		w.first.second  = points[1];
 		w.second.first  = points[2];
 		w.second.second = points[3];
-		to_remove.push_back(w);
+		// Check to make sure the wall being removed is on the costmap
+		for (int i = 0; i < current_blocks.size(); ++i)
+		{
+			if (current_blocks[i].first.first == w.first.first &&
+					current_blocks[i].first.second == w.first.second &&
+					current_blocks[i].second.first == w.second.first &&
+					current_blocks[i].second.second == w.second.second)
+			{
+				to_remove.push_back(w);
+				return;
+			}
+		}
+		ROS_INFO("Point not in list. Not removing");
 	}
 
 	/* Simple method to clean out all the walls currently being used */
@@ -274,19 +299,28 @@ namespace link_blocking_namespace
 		}
 	}
 
+	/* method to add and remove walls arbitrarily during runtime via subscribed topic
+	 * TODO: consider writing a custom message type for this, instead of using
+	 * std_msgs/Float32MultiArray */
 	void BlockingLayer::wallCallback(const std_msgs::Float32MultiArray& msg)
 	{
-		ROS_INFO("IN wallCallback");
+		// Get data
 		float points[4];
-		std::cout << "msg size: " << msg.layout.dim[0].size << std::endl;
-		std::cout << "msg stride: " << msg.layout.dim[0].stride << std::endl;
-
 		for (int i = 0; i < 4; ++i)
 		{
 			points[i] = msg.data[i];
-			std::cout << "points[" << i << "]: " << points[i] << std::endl;
+		}
+		// Depending on the label passed in the message, add or remove the wall
+		if (msg.layout.dim[0].label == "add")
+		{
+			ROS_INFO("Adding point");
+			convertAndAdd(points);
+		}
+		else if (msg.layout.dim[0].label == "remove")
+		{
+			ROS_INFO("Removing point");
+			convertAndRemove(points);
 		}
 	}
 		
-
 } // end namespace
