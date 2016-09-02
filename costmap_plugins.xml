@@ -1,0 +1,9 @@
+<class_libraries>
+  <library path="lib/liblink_blocking_layer">
+    <class type="link_blocking_namespace::BlockingLayer" base_class_type="costmap_2d::Layer">
+      <description>Layer which recieves the box sizes to place in the world to redirect agents.</description>
+    </class>
+  </library>
+</class_libraries>
+
+
