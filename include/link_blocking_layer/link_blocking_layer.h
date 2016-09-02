@@ -11,6 +11,9 @@
 
 namespace link_blocking_namespace
 {
+	typedef std::pair<double, double> point;
+	typedef std::pair<point, point> wall;
+
 	class BlockingLayer : public costmap_2d::Layer, public costmap_2d::Costmap2D
 	{
 		public:
@@ -31,7 +34,9 @@ namespace link_blocking_namespace
 			dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 			
 			boost::recursive_mutex lock_;
-			std::vector<std::pair<double,double> > points;
+			std::vector<point> points;
+			int addWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
+			int removeWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
 	};
 }
 #endif
