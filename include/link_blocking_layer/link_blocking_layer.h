@@ -8,7 +8,8 @@
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
 #include <vector>
-#include <std_msgs/Float32MultiArray.h>
+//#include <std_msgs/Float32MultiArray.h>
+#include "agent_msgs/WallUpdate.h"
 
 namespace link_blocking_namespace
 {
@@ -48,7 +49,7 @@ namespace link_blocking_namespace
 			dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 			int addWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
 			int removeWall(wall &w, double* min_x, double* min_y, double* max_x, double* max_y);
-			void wallCallback(const std_msgs::Float32MultiArray &msg);
+			void wallCallback(const agent_msgs::WallUpdate &msg);
 	};
 }
 #endif

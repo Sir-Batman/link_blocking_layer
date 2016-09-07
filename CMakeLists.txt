@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES link_blocking_layer
-  CATKIN_DEPENDS costmap_2d dynamic_reconfigure roscpp
+  CATKIN_DEPENDS costmap_2d dynamic_reconfigure roscpp agent_msgs
   DEPENDS system_lib
 )
 

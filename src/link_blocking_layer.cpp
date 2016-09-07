@@ -302,25 +302,31 @@ namespace link_blocking_namespace
 	/* method to add and remove walls arbitrarily during runtime via subscribed topic
 	 * TODO: consider writing a custom message type for this, instead of using
 	 * std_msgs/Float32MultiArray */
-	void BlockingLayer::wallCallback(const std_msgs::Float32MultiArray& msg)
+	void BlockingLayer::wallCallback(const agent_msgs::WallUpdate& msg)
 	{
 		// Get data
-		float points[4];
-		for (int i = 0; i < 4; ++i)
+		int total_changes = msg.total_changes;
+
+		float points[4*total_changes];
+
+		for (int i = 0; i < 4*total_changes; ++i)
 		{
 			points[i] = msg.data[i];
 		}
-		// Depending on the label passed in the message, add or remove the wall
-		if (msg.layout.dim[0].label == "add")
+		// Depending on the boolean label passed in the message, add or remove the wall
+		for (int i = 0; i < total_changes; ++i)
 		{
-			ROS_INFO("Adding point");
-			convertAndAdd(points);
-		}
-		else if (msg.layout.dim[0].label == "remove")
-		{
-			ROS_INFO("Removing point");
-			convertAndRemove(points);
+			if (msg.type[i] == true)
+			{
+				ROS_INFO("Adding wall");
+				convertAndAdd(&(points[4*i])); // This might not work
+			}
+			else
+			{
+				ROS_INFO("Removing wall");
+				convertAndRemove(&(points[4*i])); // Might not work
+			}
 		}
 	}
-		
+
 } // end namespace
